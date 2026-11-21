@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jiwei",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "build": { "command": "node scripts/build-cf.mjs" },
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS",
+    // 所有请求先过 Worker，用来检查访问密码
+    "run_worker_first": true
+  },
+  // 设置（模型、Key、我的器材）存在这里
+  "kv_namespaces": [{ "binding": "JIWEI_KV", "id": "9f55362851374fd89c2d83d877ab275c" }],
+  "observability": { "enabled": true }
+}

@@ -1,0 +1,34 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "jiwei",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 8787
+    },
+    {
+      "name": "jiwei-cf",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "wrangler",
+        "dev",
+        "--port",
+        "8788"
+      ],
+      "port": 8788
+    },
+    {
+      "name": "jiwei-pages",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "pages:preview"
+      ],
+      "port": 8789
+    }
+  ]
+}

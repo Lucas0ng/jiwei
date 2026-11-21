@@ -1,0 +1,10 @@
+{
+  "name": "机位 · 照片拍法解析",
+  "short_name": "机位",
+  "description": "上传照片或链接，AI 反推机位、参数与拍法，并生成拍摄策划与脚本。",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f3ef",
+  "theme_color": "#f5f3ef",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

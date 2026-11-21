@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>机位 · 照片拍法解析</title>
+  <meta name="description" content="上传照片或链接，AI 反推机位、焦段、光圈快门 ISO 和拍法，并生成拍摄策划与脚本。" />
+  <meta name="theme-color" content="#f5f3ef" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#131211" media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="机位" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#analyze">
+      <svg viewBox="0 0 32 32" class="brand-mark" aria-hidden="true"><rect x="3" y="8" width="26" height="19" rx="5"/><rect x="10" y="4" width="12" height="6" rx="2"/><circle cx="16" cy="17.5" r="6" class="brand-lens"/></svg>
+      <span>机位</span><small>照片拍法解析</small>
+    </a>
+    <nav class="tabs" id="tabs">
+      <a href="#analyze" data-view="analyze"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="4"/><path d="M4 8h3l2-3h6l2 3h3v12H4z"/></svg><span>解析</span></a>
+      <a href="#plan" data-view="plan"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/></svg><span>策划</span></a>
+      <a href="#history" data-view="history"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg><span>历史</span></a>
+      <a href="#settings" data-view="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg><span>设置</span></a>
+    </nav>
+  </header>
+
+  <div class="banner" id="mockBanner" hidden>
+    现在是<b>演示模式</b>，解析出来的是示例结果。到 <a href="#settings">设置</a> 填一个 API Key 就能真正分析你的照片。
+  </div>
+
+  <main>
+    <!-- ============ 解析 ============ -->
+    <section id="view-analyze" class="view">
+      <div class="card input-card">
+        <div class="drop" id="drop">
+          <input type="file" id="fileInput" accept="image/*" multiple hidden />
+          <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden />
+          <div class="drop-empty" id="dropEmpty">
+            <svg viewBox="0 0 48 48" class="drop-icon" aria-hidden="true"><rect x="6" y="12" width="36" height="28" rx="6"/><rect x="17" y="7" width="14" height="7" rx="2"/><circle cx="24" cy="26" r="8"/></svg>
+            <p class="drop-title">拖进来、粘贴，或选一张照片</p>
+            <p class="drop-sub">最多 6 张。原图会自动读取 EXIF 里的真实参数。</p>
+            <div class="drop-actions">
+              <button type="button" class="btn" id="pickBtn">选择照片</button>
+              <button type="button" class="btn" id="cameraBtn">拍照</button>
+              <button type="button" class="btn ghost" id="sampleBtn">用示例图试试</button>
+            </div>
+          </div>
+          <div class="thumbs" id="thumbs"></div>
+        </div>
+
+        <div class="url-row">
+          <input type="text" inputmode="url" id="urlInput" placeholder="或粘贴链接：小红书分享文案、网页、图片地址都行" autocomplete="off" />
+          <button type="button" class="btn" id="fetchBtn">读取</button>
+        </div>
+        <p class="hint" id="urlMsg"></p>
+
+        <textarea id="noteInput" rows="2" placeholder="补充说明（可选）：比如“我只有手机”“重点讲人物怎么摆”"></textarea>
+        <label class="check deep-check"><input type="checkbox" id="deepInput" /><span>深度思考 <small class="muted">多等约 20 秒，难判断的照片可以打开</small></span></label>
+        <p class="gear-line" id="gearLine"></p>
+        <button type="button" class="btn primary big" id="analyzeBtn" disabled>开始解析</button>
+      </div>
+
+      <div class="card live" id="live" hidden>
+        <div class="live-head">
+          <span class="pulse"></span>
+          <span id="liveStatus">准备中…</span>
+          <span class="live-meta" id="liveMeta"></span>
+          <button type="button" class="btn small ghost" id="stopBtn">停止</button>
+        </div>
+        <div class="live-preview" id="livePreview"></div>
+        <details id="liveDetails">
+          <summary>查看 AI 实时输出</summary>
+          <pre id="liveText"></pre>
+        </details>
+      </div>
+
+      <div id="result"></div>
+    </section>
+
+    <!-- ============ 策划 ============ -->
+    <section id="view-plan" class="view" hidden>
+      <div class="card">
+        <h2 class="card-title">生成拍摄策划 / 脚本</h2>
+        <div class="segmented" id="planModes" role="tablist"></div>
+        <label class="field">
+          <span>主题 / 想法</span>
+          <textarea id="briefInput" rows="3" placeholder="例如：夏天傍晚在海边拍闺蜜照，想要胶片感；或者：复刻上面这张铁轨背影"></textarea>
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span>我的器材</span>
+            <input id="gearInput" placeholder="如：富士 X-T5 + 16mm + 33mm / iPhone 16 Pro" />
+          </label>
+          <label class="field">
+            <span>其他要求</span>
+            <input id="extraInput" placeholder="人数、时长、地点、预算…" />
+          </label>
+        </div>
+        <label class="check" id="useAnalysisWrap" hidden>
+          <input type="checkbox" id="useAnalysis" checked />
+          <span>参考当前解析：<b id="refTitle"></b></span>
+        </label>
+        <button type="button" class="btn primary big" id="planBtn">生成</button>
+      </div>
+
+      <div class="card live" id="planLive" hidden>
+        <div class="live-head">
+          <span class="pulse"></span>
+          <span id="planStatus">准备中…</span>
+          <span class="live-meta" id="planMeta"></span>
+          <button type="button" class="btn small ghost" id="planStopBtn">停止</button>
+        </div>
+      </div>
+
+      <article class="card md" id="planOut" hidden></article>
+      <div class="actions" id="planActions" hidden>
+        <button type="button" class="btn" id="copyPlanBtn">复制 Markdown</button>
+        <button type="button" class="btn" id="downloadPlanBtn">下载 .md</button>
+      </div>
+    </section>
+
+    <!-- ============ 历史 ============ -->
+    <section id="view-history" class="view" hidden>
+      <div class="section-head">
+        <h2>历史解析</h2>
+        <button type="button" class="btn small ghost" id="clearHistoryBtn">清空</button>
+      </div>
+      <p class="hint">只保存在这台设备的浏览器里。</p>
+      <div class="history" id="historyList"></div>
+    </section>
+
+    <!-- ============ 设置 ============ -->
+    <section id="view-settings" class="view" hidden>
+      <div class="card" id="gearCard">
+        <h2 class="card-title">我的器材 <small>解析时会告诉你用这些器材怎么拍</small></h2>
+        <div class="field-row">
+          <label class="field"><span>相机机身</span><input id="gearCamera" placeholder="如：富士 X-T5（APS-C）" autocomplete="off" /></label>
+          <label class="field"><span>手机</span><input id="gearPhone" placeholder="如：iPhone 16 Pro" autocomplete="off" /></label>
+        </div>
+        <label class="field"><span>镜头（一行一支）</span><textarea id="gearLenses" rows="3" placeholder="XF 16mm f/2.8&#10;XF 33mm f/1.4&#10;XF 18-55mm f/2.8-4"></textarea></label>
+        <label class="field"><span>其他器材</span><input id="gearOthers" placeholder="三脚架、反光板、ND 镜、闪光灯…" autocomplete="off" /></label>
+        <div class="actions">
+          <button type="button" class="btn primary" id="saveGearBtn">保存器材</button>
+          <span class="hint" id="gearMsg"></span>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">视觉模型 <small>用来看图解析，必须支持图片输入</small></h2>
+        <div id="slot-vision"></div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">文字模型 <small>用来写策划和脚本</small></h2>
+        <label class="check"><input type="checkbox" id="sameAsVision" checked /><span>和视觉模型用同一个</span></label>
+        <div id="slot-text"></div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn primary" id="saveSettingsBtn">保存设置</button>
+        <span class="hint" id="saveMsg"></span>
+      </div>
+      <div class="card subtle">
+        <h3>在手机上用</h3>
+        <p id="lanHint">手机和这台电脑连同一个 Wi-Fi，用手机浏览器打开下面的地址，再“添加到主屏幕”就像 App 一样用：</p>
+        <ul class="lan" id="lanList"></ul>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
