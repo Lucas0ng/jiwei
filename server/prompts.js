@@ -99,12 +99,12 @@ ${ANALYZE_SCHEMA}`;
 function formatExif(exif) {
   if (!exif) return '';
   const parts = [];
-  const add = (k, v) => v !== undefined && v !== null && v !== '' && parts.push(`${k}: ${v}`);
+  const add = (k, v) => v !== undefined && v !== null && v !== '' && v !== false && parts.push(`${k}: ${v}`);
   add('相机', [exif.Make, exif.Model].filter(Boolean).join(' '));
   add('镜头', exif.LensModel);
-  add('焦距', exif.FocalLength && `${exif.FocalLength}mm`);
+  add('焦距', exif.FocalLength && `${Number(Number(exif.FocalLength).toFixed(1))}mm`);
   add('等效焦距', exif.FocalLengthIn35mmFormat && `${exif.FocalLengthIn35mmFormat}mm`);
-  add('光圈', exif.FNumber && `f/${exif.FNumber}`);
+  add('光圈', exif.FNumber && `f/${Number(Number(exif.FNumber).toFixed(1))}`);
   add('快门', exif.ExposureTime && (exif.ExposureTime >= 1 ? `${exif.ExposureTime}s` : `1/${Math.round(1 / exif.ExposureTime)}s`));
   add('ISO', exif.ISO);
   add('曝光补偿', exif.ExposureCompensation !== undefined && `${exif.ExposureCompensation} EV`);

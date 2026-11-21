@@ -204,9 +204,9 @@ $('#cameraBtn').onclick = () => $('#cameraInput').click();
 $('#fileInput').onchange = (e) => addBlobs([...e.target.files]).finally(() => (e.target.value = ''));
 $('#cameraInput').onchange = (e) => addBlobs([...e.target.files]).finally(() => (e.target.value = ''));
 $('#sampleBtn').onclick = async () => {
-  const blob = await (await fetch('samples/railway.jpg')).blob();
-  $('#noteInput').value = '图片来自小红书，原图标注：FUJIFILM XT-5 | 16mm f8 1/200s iso400';
-  await addBlobs([new File([blob], 'railway.jpg', { type: 'image/jpeg' })]);
+  const blob = await (await fetch('samples/ducks.jpg')).blob();
+  $('#noteInput').value = '手机随手拍的，想知道前景树叶怎么虚得这么自然';
+  await addBlobs([new File([blob], 'ducks.jpg', { type: 'image/jpeg' })]);
 };
 
 const drop = $('#drop');
@@ -396,6 +396,11 @@ function fmtShutter(t) {
   return t >= 1 ? `${t}s` : `1/${Math.round(1 / t)}s`;
 }
 
+/** 光圈保留一位小数：iPhone 的 EXIF 记的是 2.798828125 这种有理数换算值。 */
+function fmtF(n) {
+  return `f/${Number(Number(n).toFixed(1))}`;
+}
+
 /** 参数条：有 EXIF 用 EXIF，没有就用模型给的值。 */
 function paramValues(a, exif) {
   const e = exif || null;
@@ -405,7 +410,7 @@ function paramValues(a, exif) {
       source: 'exif',
       gear: [e.Make, e.Model].filter(Boolean).join(' ').replace(/^(\w+)\s+\1/i, '$1') || a.gear?.camera || '',
       focal: e.FocalLength ? `${Math.round(e.FocalLength)}mm` : a.gear?.focal_length_text?.match(/\d+\s*mm/i)?.[0] || '',
-      aperture: e.FNumber ? `f/${e.FNumber}` : ex.aperture?.value,
+      aperture: e.FNumber ? fmtF(e.FNumber) : ex.aperture?.value,
       shutter: fmtShutter(e.ExposureTime) || ex.shutter?.value,
       iso: e.ISO ? `ISO ${e.ISO}` : ex.iso?.value && `ISO ${String(ex.iso.value).replace(/^iso\s*/i, '')}`,
     };
@@ -496,7 +501,7 @@ function renderAnalysis(a, ctx) {
   </div>`;
 
   const exRows = [
-    ['光圈', ex.aperture, exif0?.FNumber && `f/${exif0.FNumber}`],
+    ['光圈', ex.aperture, exif0?.FNumber && fmtF(exif0.FNumber)],
     ['快门', ex.shutter, exif0?.ExposureTime && fmtShutter(exif0.ExposureTime)],
     ['ISO', ex.iso, exif0?.ISO && String(exif0.ISO)],
     ['曝光补偿', ex.ev, exif0?.ExposureCompensation !== undefined && exif0?.ExposureCompensation !== null && `${exif0.ExposureCompensation} EV`],
